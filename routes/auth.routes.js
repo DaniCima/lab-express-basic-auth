@@ -12,28 +12,28 @@ router.get("/signup", (req, res) => res.render("auth/signup"));
 // POST route ==> to process form data
 router.post("/signup", (req, res) => {
   const { username, password } = req.body;
-
+  console.log(req.body);
   bcrypt
     .genSalt(saltRounds)
     .then((salt) => bcrypt.hash(password, salt))
     .then((hashedPassword) => {
       return User.create({
         username,
-        passwordHash: hashedPassword,
+        password: hashedPassword,
+      }).then((userFromDB) => {
+        req.session.currentUser = userFromDB;
+        console.log("Newly created user is: ", userFromDB, req.session);
+        res.redirect("/auth/profile");
       });
     })
-    .then((userFromDB) => {
-      // console.log('Newly created user is: ', userFromDB);
-      req.session.currentUser = userFromDB;
-      res.redirect("/auth/profile");
-    })
+
     .catch((error) => console.log(error));
   //Authentication logic goes here
 });
 
 /* GET Profile page */
 router.get("/profile", (req, res) => {
-  console.log("profile page", req.session);
+  // console.log("profile page", req.session);
   const { username } = req.session.currentUser;
   res.render("auth/profile", { username });
 });
@@ -64,7 +64,7 @@ router.post("/login", (req, res) => {
         });
         return;
         // 2. if the password provided by the user is valid,
-      } else if (bcrypt.compareSync(password, user.passwordHash)) {
+      } else if (bcrypt.compareSync(password, user.password)) {
         // 4. if both are correct, let the user in the app.
         req.session.currentUser = user;
         res.render("auth/profile", user);
@@ -74,5 +74,12 @@ router.post("/login", (req, res) => {
       }
     })
     .catch((err) => console.log(err));
+});
+
+router.post("/logout", (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) next(err);
+    res.redirect("/");
+  });
 });
 module.exports = router;
