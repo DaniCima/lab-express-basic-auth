@@ -1,4 +1,7 @@
 // routes/auth.routes.js
+
+const { isLoggedIn, isLoggedOut } = require("../middleware/route-guard.js");
+
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
@@ -8,9 +11,9 @@ const router = new Router();
 const User = require("../models/User.model");
 
 // GET route ==> to display the signup form to users
-router.get("/signup", (req, res) => res.render("auth/signup"));
+router.get("/signup", isLoggedOut, (req, res) => res.render("auth/signup"));
 // POST route ==> to process form data
-router.post("/signup", (req, res) => {
+router.post("/signup", isLoggedOut, (req, res) => {
   const { username, password } = req.body;
   console.log(req.body);
   bcrypt
@@ -32,18 +35,18 @@ router.post("/signup", (req, res) => {
 });
 
 /* GET Profile page */
-router.get("/profile", (req, res) => {
+router.get("/profile", isLoggedIn, (req, res) => {
   // console.log("profile page", req.session);
   const { username } = req.session.currentUser;
   res.render("auth/profile", { username });
 });
 
-router.get("/login", (req, res) => {
+router.get("/login", isLoggedOut, (req, res) => {
   console.log("req session", req.session);
   res.render("auth/login");
 });
 
-router.post("/login", (req, res) => {
+router.post("/login", isLoggedOut, (req, res) => {
   const { username, password } = req.body;
 
   // Check for empty fields
@@ -76,7 +79,7 @@ router.post("/login", (req, res) => {
     .catch((err) => console.log(err));
 });
 
-router.post("/logout", (req, res, next) => {
+router.post("/logout", isLoggedIn, (req, res, next) => {
   req.session.destroy((err) => {
     if (err) next(err);
     res.redirect("/");
